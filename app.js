@@ -173,8 +173,7 @@ async function openFile(rel) {
       state.lastDescTrim = descTrim();
       state.dirty = false;
       $('status').textContent = '已加载保存的描述';
-      reflowAlign();
-      return;
+        return;
     }
   } catch {}
   state.descEditor.setValue('');
@@ -203,7 +202,6 @@ async function generateBlocks() {
     state.lastDescTrim = descTrim();
     state.dirty = false;
     $('status').textContent = '';
-    reflowAlign();
     toast(`已生成逐行描述(${lines.length} 行)`, 'ok');
   } catch (e) {
     $('status').textContent = '生成失败';
@@ -270,85 +268,6 @@ async function saveFile() {
   } catch (e) { toast('保存失败: ' + e.message, 'err'); }
 }
 
-// ---------- 自动换行 + 行高对齐 ----------
-function textWidth(text, charW) {
-  let w = 0;
-  for (const ch of text) w += (ch.charCodeAt(0) > 255 ? 2 : 1) * charW;
-  return w;
-}
-function reflowAlign() {
-  if (!state.wrap || !state.file) return;
-  // 熔断保护:2 秒内触发超过 20 次视为循环,自动关闭自动换行
-  const now = Date.now();
-  state.reflowCount = (state.reflowCount || 0) + 1;
-  if (!state.reflowTs) state.reflowTs = now;
-  if (now - state.reflowTs > 2000) { state.reflowTs = now; state.reflowCount = 1; }
-  if (state.reflowCount > 20) {
-    applyWrap(false);
-    saveLLM({ ...getLLM(), wrap: false });
-    $('set-wrap') && ($('set-wrap').checked = false);
-    toast('检测到行高对齐循环,已自动关闭自动换行', 'err');
-    state.reflowTs = now; state.reflowCount = 0;
-    return;
-  }
-  const codeLines = state.editor.getValue().split('\n');
-  const descLines = state.descEditor.getValue().split('\n');
-  const info = state.editor.getLayoutInfo();
-  const charW = state.editor.getOption(monaco.editor.EditorOption.fontSize) * 0.6;
-  const cw = info.contentWidth;
-  if (!cw) return;
-  const n = Math.min(codeLines.length, descLines.length);
-  const newPads = new Set();
-  let codeChanged = false, descChanged = false;
-  for (let i = 0; i < n; i++) {
-    const cw_ = textWidth(codeLines[i], charW);
-    const dw = textWidth(descLines[i], charW);
-    const maxW = Math.max(cw_, dw);
-    if (dw < maxW) {
-      // floor:补到不超过 maxW(差 <1 字符宽),保证下一轮收敛,不会超补摆动
-      const padN = Math.min(Math.floor((maxW - dw) / charW), 2000);
-      descLines[i] += ' '.repeat(padN);
-      if (padN > 0) descChanged = true;
-    }
-    if (cw_ < maxW) {
-      const padN = Math.min(Math.floor((maxW - cw_) / charW), 2000);
-      codeLines[i] += ' '.repeat(padN);
-      if (padN > 0) { newPads.add(i + 1); codeChanged = true; }
-    }
-  }
-  state.codePadLines = newPads;
-  // 内容相同则不要 setValue,避免重复触发事件链;
-  // setValue 后立即同步 trim 快照,双保险切断循环
-  const newDesc = descLines.join('\n');
-  const newCode = codeLines.join('\n');
-  if (descChanged && newDesc !== state.descEditor.getValue()) {
-    state.reflowing = true;
-    state.descEditor.setValue(newDesc);
-    state.reflowing = false;
-    state.lastDescTrim = newDesc.split('\n').map(l => l.trimEnd()).join('\n');
-  }
-  if (codeChanged && newCode !== state.editor.getValue()) {
-    state.reflowing = true;
-    state.editor.setValue(newCode);
-    state.reflowing = false;
-    state.lastCodeTrim = newCode.split('\n').map(l => l.trimEnd()).join('\n');
-  }
-}
-// 清理代码侧补的空格(保存/应用到代码前调用)
-function stripCodePads() {
-  if (!state.codePadLines.size) return state.editor.getValue();
-  const lines = state.editor.getValue().split('\n');
-  for (const ln of state.codePadLines) {
-    if (ln >= 1 && ln <= lines.length) lines[ln - 1] = lines[ln - 1].trimEnd();
-  }
-  return lines.join('\n');
-}
-function applyWrap(on) {
-  state.wrap = !!on;
-  state.editor.updateOptions({ wordWrap: state.wrap ? 'on' : 'off' });
-  state.descEditor.updateOptions({ wordWrap: state.wrap ? 'on' : 'off' });
-  if (state.wrap) reflowAlign();
-}
 
 // ---------- 用户修改高亮(黄色加粗,相对基线) ----------
 let hlCodeDeco = null, hlDescDeco = null;
@@ -435,7 +354,6 @@ function initEditor() {
     state.dirty = true;
     updateEditHighlights();
     $('status').textContent = '描述已修改,可点「▶ 应用到代码」';
-    reflowAlign();
   }, 600));
   // 代码编辑 → 高亮用户修改 + 自动重新生成描述(补空格触发的变化用 trim 快照识别,忽略)
   state.editor.onDidChangeModelContent(debounce(() => {
@@ -447,10 +365,7 @@ function initEditor() {
     updateEditHighlights();
     $('status').textContent = '代码已修改…';
     autoExplain();
-    reflowAlign();
   }, 1500));
-  // 窗口/宽度变化时重新对齐行高(防抖,避免布局抖动触发循环)
-  state.editor.onDidLayoutChange(debounce(() => reflowAlign(), 200));
 }
 
 function setBusy(b) { $('btn-explain').disabled = b; $('btn-apply').disabled = b; }
@@ -531,7 +446,6 @@ function openSettings() {
   $('set-dir').value = state.root || '';
   $('set-detail').value = c.detailLevel != null ? c.detailLevel : 40;
   $('set-exts').value = (state.exts || []).join(', ');
-  $('set-wrap').checked = !!c.wrap;
   updateDetailTag();
   $('modal-mask').hidden = false;
 }
@@ -569,8 +483,7 @@ window.__nlcmStart = async () => {
   $('set-preset').addEventListener('change', () => applyPreset($('set-preset').value));
   $('set-detail').addEventListener('input', updateDetailTag);
   $('btn-save').addEventListener('click', async () => {
-    saveLLM({ baseUrl: $('set-base').value.trim(), apiKey: $('set-key').value.trim(), model: currentModel(), detailLevel: +$('set-detail').value, wrap: $('set-wrap').checked });
-    applyWrap($('set-wrap').checked);
+    saveLLM({ baseUrl: $('set-base').value.trim(), apiKey: $('set-key').value.trim(), model: currentModel(), detailLevel: +$('set-detail').value });
     // 保存自定义扩展名
     const exts = $('set-exts').value.split(/[,，\s]+/).filter(Boolean);
     try {
@@ -594,7 +507,6 @@ window.__nlcmStart = async () => {
   });
   const c = getLLM();
   $('llm-label').textContent = `LLM: ${c.model || '未配置(默认本地 ollama)'}`;
-  applyWrap(!!c.wrap);
   // 加载自定义扩展名
   try { state.exts = (await (await fetch('/api/exts')).json()).exts || []; } catch { state.exts = []; }
   try { await loadTree(); } catch (e) { toast('加载项目失败: ' + e.message, 'err'); }
