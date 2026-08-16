@@ -451,7 +451,7 @@ function openSettings() {
 }
 function updateDetailTag() {
   const v = +$('set-detail').value;
-  const tag = v < 30 ? '小白' : v < 70 ? '中级' : '大佬';
+  const tag = v < 30 ? '极简' : v < 70 ? '标准' : '详细';
   $('set-detail-val').textContent = `${v} (${tag})`;
 }
 function closeSettings() { $('modal-mask').hidden = true; }

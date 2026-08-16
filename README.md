@@ -73,7 +73,7 @@ npm start
 | API Key | 接口密钥 | Ollama 可留空;DeepSeek 填 `sk-...` |
 | 模型 | 模型 ID(预设内可下拉选,也可自定义) | DeepSeek:`deepseek-v4-flash` / `deepseek-chat` |
 | 工作目录 | 项目根目录 | 可直接改或点「📂 浏览…」选择 |
-| AI 解释详细度 | 0=纯小白,100=编程大佬 | 新手调低,老手调高 |
+| AI 解释详细度 | 0=极简(老手),100=最详细(小白) | 小白拉高,老手拉低 |
 | 可修改的文件扩展名 | 额外支持的文件后缀 | `.cfg, .properties, .lang` |
 
 > DeepSeek V4 模型(`deepseek-v4-flash`/`deepseek-v4-pro`)会自动带上 thinking 参数,无需手动配置。
@@ -93,7 +93,7 @@ npm start
 
 同一个 Minecraft 配置文件(easy_villagers-server.toml,简单村民模组),详细度拉低(小白)和拉高(大佬)的解释差别:
 
-| 新手模式(详细度低) | 老手模式(详细度高) |
+| 新手模式(详细度高) | 老手模式(详细度低) |
 |---|---|
 | ![新手](screenshots/detail-beginner.jpg) | ![老手](screenshots/detail-expert.jpg) |
 

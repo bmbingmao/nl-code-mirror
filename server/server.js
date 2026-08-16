@@ -149,12 +149,12 @@ async function explainCode(code, filePath, llm) {
   const lang = path.extname(filePath).slice(1) || 'code';
   const total = code.split('\n').length;
   const allLines = new Array(total).fill('');
-  // 解释详细度:0=小白,100=大佬(来自设置)
+  // 解释详细度:0=极简(老手),100=最详细(小白),数值即详细度
   const detail = Number(llm && llm.detailLevel != null ? llm.detailLevel : 40);
   let levelDesc;
-  if (detail < 30) levelDesc = '面向完全不懂编程的新手:解释要尽量详细,把术语、语法、API 的作用都讲清楚,像教学一样。';
+  if (detail < 30) levelDesc = '面向资深程序员:只讲关键点,极简,术语直接用,绝不解释任何基础概念。';
   else if (detail < 70) levelDesc = '面向有编程经验的开发者:解释代码意图和关键点,术语可直接使用,不用解释基础概念。';
-  else levelDesc = '面向资深程序员:只讲关键点,极简,术语直接用,绝不解释任何基础概念。';
+  else levelDesc = '面向完全不懂编程的新手:解释要尽量详细,把术语、语法、API 的作用都讲清楚,像教学一样。';
   const sys = `你是资深程序员,用大白话给新手讲解代码。
 把用户给出的 ${lang} 代码逐行解释成通俗易懂的中文口语,像朋友在旁边给你讲代码一样。
 要求:
