@@ -278,6 +278,19 @@ function textWidth(text, charW) {
 }
 function reflowAlign() {
   if (!state.wrap || !state.file) return;
+  // 熔断保护:2 秒内触发超过 20 次视为循环,自动关闭自动换行
+  const now = Date.now();
+  state.reflowCount = (state.reflowCount || 0) + 1;
+  if (!state.reflowTs) state.reflowTs = now;
+  if (now - state.reflowTs > 2000) { state.reflowTs = now; state.reflowCount = 1; }
+  if (state.reflowCount > 20) {
+    applyWrap(false);
+    saveLLM({ ...getLLM(), wrap: false });
+    $('set-wrap') && ($('set-wrap').checked = false);
+    toast('检测到行高对齐循环,已自动关闭自动换行', 'err');
+    state.reflowTs = now; state.reflowCount = 0;
+    return;
+  }
   const codeLines = state.editor.getValue().split('\n');
   const descLines = state.descEditor.getValue().split('\n');
   const info = state.editor.getLayoutInfo();
@@ -292,25 +305,33 @@ function reflowAlign() {
     const dw = textWidth(descLines[i], charW);
     const maxW = Math.max(cw_, dw);
     if (dw < maxW) {
-      descLines[i] += ' '.repeat(Math.ceil((maxW - dw) / charW));
-      descChanged = true;
+      // floor:补到不超过 maxW(差 <1 字符宽),保证下一轮收敛,不会超补摆动
+      const padN = Math.min(Math.floor((maxW - dw) / charW), 2000);
+      descLines[i] += ' '.repeat(padN);
+      if (padN > 0) descChanged = true;
     }
     if (cw_ < maxW) {
-      codeLines[i] += ' '.repeat(Math.ceil((maxW - cw_) / charW));
-      newPads.add(i + 1);
-      codeChanged = true;
+      const padN = Math.min(Math.floor((maxW - cw_) / charW), 2000);
+      codeLines[i] += ' '.repeat(padN);
+      if (padN > 0) { newPads.add(i + 1); codeChanged = true; }
     }
   }
   state.codePadLines = newPads;
-  if (descChanged) {
+  // 内容相同则不要 setValue,避免重复触发事件链;
+  // setValue 后立即同步 trim 快照,双保险切断循环
+  const newDesc = descLines.join('\n');
+  const newCode = codeLines.join('\n');
+  if (descChanged && newDesc !== state.descEditor.getValue()) {
     state.reflowing = true;
-    state.descEditor.setValue(descLines.join('\n'));
+    state.descEditor.setValue(newDesc);
     state.reflowing = false;
+    state.lastDescTrim = newDesc.split('\n').map(l => l.trimEnd()).join('\n');
   }
-  if (codeChanged) {
+  if (codeChanged && newCode !== state.editor.getValue()) {
     state.reflowing = true;
-    state.editor.setValue(codeLines.join('\n'));
+    state.editor.setValue(newCode);
     state.reflowing = false;
+    state.lastCodeTrim = newCode.split('\n').map(l => l.trimEnd()).join('\n');
   }
 }
 // 清理代码侧补的空格(保存/应用到代码前调用)
@@ -428,8 +449,8 @@ function initEditor() {
     autoExplain();
     reflowAlign();
   }, 1500));
-  // 窗口/宽度变化时重新对齐行高
-  state.editor.onDidLayoutChange(() => reflowAlign());
+  // 窗口/宽度变化时重新对齐行高(防抖,避免布局抖动触发循环)
+  state.editor.onDidLayoutChange(debounce(() => reflowAlign(), 200));
 }
 
 function setBusy(b) { $('btn-explain').disabled = b; $('btn-apply').disabled = b; }
