@@ -1,0 +1,66 @@
+{
+  "name": "nl-code-mirror",
+  "version": "0.2.0",
+  "description": "三栏自然语言编程镜像编辑器:文件树 | 代码 | 逐行大白话解释,双向同步,AI 辅助代码审阅与修改",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "start:app": "electron .",
+    "dist:linux": "electron-builder --linux",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac"
+  },
+  "keywords": [
+    "nlp",
+    "code-explainer",
+    "ai",
+    "editor",
+    "monaco",
+    "natural-language-programming"
+  ],
+  "license": "MIT",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "build": {
+    "appId": "com.nlcm.mirror",
+    "productName": "NL Code Mirror",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**",
+      "server/**",
+      "index.html",
+      "app.js",
+      "style.css",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.developer-tools"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Development",
+      "maintainer": "bmbingmao"
+    }
+  },
+  "dependencies": {
+    "monaco-editor": "^0.56.0"
+  },
+  "devDependencies": {
+    "electron": "^43.4.0",
+    "electron-builder": "^26.0.12"
+  }
+}

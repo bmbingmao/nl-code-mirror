@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NL Code Mirror — 自然语言编程镜像</title>
+<link rel="stylesheet" data-name="vs/editor/editor.main" href="./vs/editor/editor.main.css">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<header id="topbar">
+  <span id="root-label" class="muted">项目: —</span>
+  <span id="llm-label" class="muted" title="当前模型">LLM: —</span>
+  <span id="status" class="muted"></span>
+  <div class="spacer"></div>
+  <button id="btn-refresh" title="刷新文件树">⟳ 刷新</button>
+  <button id="btn-explain" class="primary" title="AI 生成逐块自然语言描述">✨ 生成描述</button>
+  <button id="btn-apply" title="按右侧描述修改代码">▶ 应用到代码</button>
+  <button id="btn-undo" title="撤销上次应用">↩ 撤销</button>
+  <button id="btn-save-file" class="primary" title="保存修改到文件 (Ctrl+S)">💾 保存</button>
+  <button id="btn-settings" title="LLM 设置">⚙</button>
+</header>
+
+<div id="main">
+  <aside id="tree-pane">
+    <div id="tree-toolbar"><button id="btn-open-dir" title="打开其他文件夹">📂 打开文件夹</button></div>
+    <div id="tree"></div>
+  </aside>
+  <section id="code-pane"><div id="editor"></div></section>
+  <section id="desc-pane">
+    <div id="desc-editor"></div>
+  </section>
+</div>
+
+<div id="modal-mask" hidden>
+  <div id="modal">
+    <h3>LLM 设置 <span class="muted small">(存于浏览器本地)</span></h3>
+    <label>AI 提供商
+      <select id="set-preset">
+        <option value="">— 自定义 / 手动填写 —</option>
+        <option value="deepseek">DeepSeek</option>
+        <option value="openai">OpenAI</option>
+        <option value="openrouter">OpenRouter</option>
+        <option value="moonshot">Moonshot (Kimi)</option>
+        <option value="zhipu">智谱 GLM</option>
+        <option value="dashscope">阿里通义千问</option>
+        <option value="siliconflow">硅基流动 SiliconFlow</option>
+        <option value="groq">Groq</option>
+        <option value="ollama">Ollama (本地)</option>
+      </select>
+    </label>
+    <label>Base URL <input id="set-base" placeholder="http://127.0.0.1:11434/v1" spellcheck="false"></label>
+    <label>API Key <input id="set-key" type="password" placeholder="sk-... (本地 ollama 可留空)" spellcheck="false"></label>
+    <label>模型 <select id="set-model"></select><input id="set-model-custom" placeholder="输入自定义模型名" spellcheck="false" hidden></label>
+    <label>工作目录 <span class="dir-row"><input id="set-dir" placeholder="~/projects" spellcheck="false"><button id="btn-browse" type="button">📂 浏览…</button></span></label>
+    <label>AI 解释详细度
+      <span class="slider-row">
+        <input id="set-detail" type="range" min="0" max="100" value="40">
+        <span id="set-detail-val" class="detail-val">40 (中级)</span>
+      </span>
+      <span class="muted small">0 = 纯小白,100 = 编程大佬</span>
+    </label>
+    <label>可修改的文件扩展名
+      <input id="set-exts" placeholder=".cfg, .properties, .lang" spellcheck="false">
+      <span class="muted small">逗号分隔,自动转小写;默认已支持常见代码/配置格式,这里添加额外的</span>
+    </label>
+    <label class="chk-row"><input id="set-wrap" type="checkbox"> 自动换行(代码和描述都换行,行高自动对齐)</label>
+    <div class="modal-btns">
+      <button id="btn-save">保存</button>
+      <button id="btn-cancel">取消</button>
+    </div>
+    <p class="muted small" id="modal-hint"></p>
+  </div>
+</div>
+
+<div id="dir-mask" hidden>
+  <div id="dir-modal">
+    <h3>选择工作目录</h3>
+    <div id="dir-path" class="dir-path">/</div>
+    <div id="dir-list"></div>
+    <div class="modal-btns">
+      <button id="dir-up" type="button">⬆ 上级</button>
+      <button id="dir-home" type="button">🏠 主目录</button>
+      <div class="spacer"></div>
+      <button id="dir-cancel" type="button">取消</button>
+      <button id="dir-select" class="primary" type="button">✓ 选择此目录</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" hidden></div>
+
+<script>var require = { paths: { vs: './vs' } };</script>
+<script src="./vs/loader.js"></script>
+<script src="./vs/editor/editor.main.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>
