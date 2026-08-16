@@ -39,15 +39,13 @@
 验证安装:打开终端/命令提示符,输入 `node -v`(看到 v18 以上就 OK)。
 
 **然后:**
-
+解压缩nl-code-mirror-v0.2.0.zip 后进入目录nl-code-mirror
 ```bash
-unzip nl-code-mirror-v0.2.0.zip   # Windows 直接右键解压
-cd nl-code-mirror
 npm install
 npm start
 ```
 
-浏览器打开 **http://127.0.0.1:8787**。
+浏览器打开 http://127.0.0.1:8787。
 
 ### 方式二:桌面版(零依赖,免装 Node)
 
